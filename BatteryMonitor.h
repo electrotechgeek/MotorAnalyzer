@@ -1,5 +1,5 @@
 /*
- * BatteryMonitor condensed
+ * BatteryMonitor condensed for one battery
  */
 
 struct BatteryData {
@@ -7,10 +7,12 @@ struct BatteryData {
   byte  cells;         // Number of Cells (used for alarm/warning voltage)
   short vScale,vBias;  // voltage polynom V = vbias + AnalogIn(vpin)*vscale
   unsigned short voltage;       // Current battery voltage (in 10mV:s)
+  unsigned short previousVoltage;
   unsigned short minVoltage;    // Minimum voltage since reset
   byte  cPin;             // A/D pin for current sensor (255 = BM_NOPIN <=> no sensor)
   short cScale,cBias;     // current polynom C = cbias + AnalogIn(cpin)*cscale
   short current;          // Current battery current (in 10mA:s)
+  short previousCurrent;
   short maxCurrent;       // Maximum current since reset
   long  usedCapacity;     // Capacity used since reset (in uAh)
   long  testStartUsedCapacity;
@@ -32,7 +34,7 @@ int batteryWarningCount = 0;
 void resetBattery(byte batteryNo);
 void initializeBatteryMonitor(byte numberOfMonitoredBatteries, float alarmVoltage);
 void setBatteryCellVoltageThreshold(float alarmVoltage);
-void measureBatteryVoltage(unsigned short deltaTime);
+void measureBattery(unsigned short deltaTime);
 
 #define BM_WARNING_RATIO 1.1
 
@@ -80,6 +82,8 @@ byte batteryGetCellCount() {
   }
 }
 
+// TO DO: Fix oversampling here and in load cell
+
 void initializeBatteryMonitor(float alarmVoltage) {
   // set ADC prescaler to 64, this ups samples per second to ~16KHz
   //ADCSRA &= ((1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)); // first clear bits
@@ -87,7 +91,7 @@ void initializeBatteryMonitor(float alarmVoltage) {
   
   //setBatteryCellVoltageThreshold(alarmVoltage);
   resetBattery();
-  measureBatteryVoltage(0);
+  measureBattery(0);
   batteryGetCellCount();
 }
 
@@ -105,18 +109,26 @@ boolean batteryIsWarning() {
   return false;
 }
 
-void measureBatteryVoltage(unsigned short deltaTime) 
+void measureBattery(unsigned short deltaTime) 
 {
   batteryAlarm = false;
   batteryWarning = false;
-  batteryData.voltage = (long)analogRead(batteryData.vPin) * batteryData.vScale / (1L << ADC_NUMBER_OF_BITS) + batteryData.vBias;
+  unsigned short tempVoltage = (long)analogRead(batteryData.vPin) * batteryData.vScale / (1L << ADC_NUMBER_OF_BITS) + batteryData.vBias;
+  if (abs(tempVoltage - batteryData.previousVoltage) < 100) { // throw out erroneous measurements
+    batteryData.voltage = tempVoltage;
+    batteryData.previousVoltage = batteryData.voltage;
+  }
   //batteryData.voltage = (long)analogRead(batteryData.vPin);
   
   if (batteryData.voltage < batteryData.minVoltage) {
     batteryData.minVoltage = batteryData.voltage;
   }
   
-  batteryData.current = (long)analogRead(batteryData.cPin) * batteryData.cScale * 10 / (1L << ADC_NUMBER_OF_BITS) + batteryData.cBias * 10;
+  short tempCurrent = (long)analogRead(batteryData.cPin) * batteryData.cScale * 10 / (1L << ADC_NUMBER_OF_BITS) + batteryData.cBias * 10;
+  if (abs(tempCurrent - batteryData.previousCurrent) < 100) { // throw out erroneous measurements
+    batteryData.current = tempCurrent;
+    batteryData.previousCurrent = batteryData.current;
+  }
   if (batteryData.current > batteryData.maxCurrent) {
     batteryData.maxCurrent = batteryData.current;
   }

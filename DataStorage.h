@@ -1,4 +1,8 @@
-
+/* 
+ * Data Storage
+ * 
+ * Handles EEPROM value reading/saving
+ */
 
 
 
@@ -70,10 +74,10 @@ typedef struct {
 
 
 void initEEPROM() {
-  cal[0] = 68;
-  cal[1] = 99.5;
-  cal[2] = 162;
-  cal[3] = 344.9;
+  cal[AREAD] = 68;
+  cal[BREAD] = 162;
+  cal[AWEIGHT] = 99.5;
+  cal[BWEIGHT] = 344.9;
 }
 
 #define GET_NVR_OFFSET(param) ((int)&(((t_NVR_Data*) 0)->param))
@@ -83,18 +87,18 @@ void initEEPROM() {
 #define writeLong(value, addr) nvrWriteLong(value, GET_NVR_OFFSET(addr))
 
 void readEEPROM() { 
-  cal[0] = readFloat(A_READ_ADR);
-  cal[1] = readFloat(A_WEIGHT_ADR);
-  cal[2] = readFloat(B_READ_ADR);
-  cal[3] = readFloat(B_WEIGHT_ADR);
+  cal[AREAD] = readFloat(A_READ_ADR);
+  cal[BREAD] = readFloat(B_READ_ADR);
+  cal[AWEIGHT] = readFloat(A_WEIGHT_ADR);
+  cal[BWEIGHT] = readFloat(B_WEIGHT_ADR);
   
 }
 
 void writeEEPROM() {
-  writeFloat(cal[0], A_READ_ADR);
-  writeFloat(cal[1], A_WEIGHT_ADR);
-  writeFloat(cal[2], B_READ_ADR);
-  writeFloat(cal[3], B_WEIGHT_ADR);
+  writeFloat(cal[AREAD], A_READ_ADR);
+  writeFloat(cal[BREAD], B_READ_ADR);
+  writeFloat(cal[AWEIGHT], A_WEIGHT_ADR);
+  writeFloat(cal[BWEIGHT], B_WEIGHT_ADR);
   writeFloat(SOFTWARE_VERSION, SOFTWARE_VERSION_ADR);
 }
 

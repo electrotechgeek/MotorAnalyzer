@@ -10,11 +10,11 @@ void writeMotor(int command);
 /* processMotor
  * 
  * Controls motor and writes MINCOMMAND unless:
- *   - opMode != 0
+ *   - mode != 0
  *   - battery is not in warning or alarm state.
  */ 
 void processMotor() {
-  switch (opMode) {
+  switch (mode) {
     case '0':
       // do nothing, waiting for command to start
       throttle = MINCOMMAND;      
@@ -36,23 +36,13 @@ void processMotor() {
       delay(3000);
       Serial.println("Now sending MINCOMMAND to motors...");
       throttle = MINCOMMAND;
-      opMode = '0';
+      mode = '0';
       queryType = 'x';
-      break;
-      
-    case 'l':
-      // calibrate load cell
-      if (frameCounter % 25 == 0) {
-        calibrateLoadCell();
-      }
-      throttle = MINCOMMAND;
-      break;
-      
+      break;     
   }
   
   if (batteryAlarm) {
-    opMode = '0';
-    testEndTime = currentTime;
+    stopTest();
   }
   
   writeMotor(throttle);

@@ -1,24 +1,26 @@
 /*
     Motor Analyzer
     written by Chip Wood
-    February 14, 2013
+    March 27, 2013
     
     !!! SAFETY WARNING !!!
       This program will cause a motor to go from no throttle to full throttle! If you're
       doing what it was designed for, this means props are on and it can lift off or 
       damage anything in the path of the props! Ensure the motor is strapped down well
-      and cannot move no matter how hard the motor pulls!
+      and cannot move no matter how hard the motor pulls or pushes!
     
     Purpose: The motor analyzer is designed to collect data on the efficiency and throttle
              characteristics of a given motor and ESC combination. 
              To get an accurate measurement of the performance, it will collect current,
              voltage, thrust, and RPM data and output it to the console via serial for
              easy collection and parsing for analysis.
-uController: 1x Arduino Pro Mini 5V/16MHz
-    Sensors: 1x AttoPilot 90A Current/Voltage sensor
-             1x Load Cell - for measuring thrust
-             1x INA125 Instrumentation Amplifier - load cell signal goes through this to microcontroller
              
+   Software: This software was initially designed to work with an Arduino Pro Mini 5V/16MHz,
+             AttoPilot current/voltage sensor, and a load cell amplified by an INA125.
+             There is a PCB in the works (first prototypes have been received but not tested)
+             that can easily be configured to work with different ranges of voltages anc current.
+             The defaults for the first iteration are 18V and 40A. Exceeding these values
+             will damage the microcontroller.             
  */
  
 
@@ -28,7 +30,7 @@ uController: 1x Arduino Pro Mini 5V/16MHz
 #include "pins_arduino.h"
 #include <EEPROM.h>
 
-#define SOFTWARE_VERSION 0.01
+#define SOFTWARE_VERSION 0.1
 #define BAUD 115200
 #define ADC_NUMBER_OF_BITS 10
 #define LEDPIN 13
@@ -37,17 +39,18 @@ uController: 1x Arduino Pro Mini 5V/16MHz
 #define TASK_100HZ 1
 #define TASK_50HZ 2
 #define TASK_25HZ 4
-#define TASK_10HZ 10
-#define TASK_1HZ 100
+//#define TASK_10HZ 10
+//#define TASK_1HZ 100
 #define THROTTLE_ADJUST_TASK_SPEED TASK_50HZ
 
-unsigned long frameCounter = 0;
 float G_dt = 0.002;
+float mainG_dt = 0.002;
+unsigned long frameCounter = 0;
 unsigned long previousTime = 0;
 unsigned long currentTime = 0;
 unsigned long deltaTime = 0;
-unsigned long oneHZpreviousTime = 0;
-unsigned long tenHZpreviousTime = 0;
+//unsigned long oneHZpreviousTime = 0;
+//unsigned long tenHZpreviousTime = 0;
 unsigned long twentyfiveHZpreviousTime = 0;
 unsigned long fiftyHZpreviousTime = 0;
 unsigned long hundredHZpreviousTime = 0;
@@ -60,7 +63,7 @@ void stopTest();
 
 char queryType = 'x';
 
-int throttle = 1000;
+unsigned int throttle = 1000;
 
 void writeEEPROM();
 void readEEPROM();
@@ -72,31 +75,37 @@ void nvrWriteLong(long value, int address); // defined in DataStorage.h
 // AQ BatteryMonitor setup
 #include "BatteryMonitor.h"
 // Usage: #define BattCustomConfig DEFINE_BATTERY(#cells, vpin, vscale, vbias, cpin, cscale, cbias)
-// breadboarded version
+// breadboarded version w/90A AttoPilot using 5V/16MHz Arduino Pro Mini
 //#define BattCustomConfig DEFINE_BATTERY(3,A0,78.5,0,A1,136.363636,0) // voltage on a0, current on a1
 // v0.1 first prototype from DorkBot:
 #define BattCustomConfig DEFINE_BATTERY(3,A0,18.666,0,A1,40.26,0) // voltage on a0, current on a1
 struct BatteryData batteryData = BattCustomConfig;
 
 // load cell
-char opMode = '0';
+char mode = '0';
 float cal[4];
+int newCalNum = 0;
+#define AREAD 0
+#define BREAD 1
+#define AWEIGHT 2
+#define BWEIGHT 3
+#define NOCAL -1
 #include "LoadCell.h"
 
 // control of motor
-#define MOTOR_PWM_Timer
 #define MINCOMMAND 1000
 #define MAXCOMMAND 2000
 void slowMotorRamp();
 #include "MotorsPWMTimer.h"
 
 
-
-//serial transmission
+// serial transmission
 #include "SerialComm.h"
 
+// different data collection modes
 #include "Modes.h"
 
+// EEPROM
 #include "DataStorage.h"
 
 
@@ -125,7 +134,7 @@ void process25() {
                    // once done, check if data at 50Hz actually improves calculations/graphing
 }
 
-void process10() {
+/*void process10() {
   G_dt = (currentTime - tenHZpreviousTime) / 1000000.0;
   tenHZpreviousTime = currentTime;
 }
@@ -133,7 +142,7 @@ void process10() {
 void process1() {
   G_dt = (currentTime - oneHZpreviousTime) / 1000000.0;
   oneHZpreviousTime = currentTime;
-}
+}*/
 
 
 ///////////////////////////////////////////////////////////////
@@ -159,12 +168,17 @@ void setup() {
   Serial.println(" by wooden");
 }
 
+///////////////////////////////////////////////////////////////
+////////////////////////// MAIN EXECUTION /////////////////////
+///////////////////////////////////////////////////////////////
+
 void loop() {
   currentTime = micros();
   deltaTime = currentTime - previousTime;
   G_dt = (deltaTime) / 1000000.0;
+  mainG_dt = G_dt;
   
-  measureBatteryVoltage(G_dt*1000.0);
+  measureBattery(G_dt*1000.0);
   
   if (deltaTime >= 10000) {
     frameCounter++;
@@ -176,12 +190,13 @@ void loop() {
     if (frameCounter % TASK_25HZ == 0 ) {
       process25();
     }
-    if (frameCounter % TASK_10HZ == 0 ) {
+    // no functions in process10 or 1 currently, don't bother running
+    /*if (frameCounter % TASK_10HZ == 0 ) {
       process10();
     }
     if (frameCounter % TASK_1HZ == 0 ) {
       process1();
-    }
+    }*/
     previousTime = currentTime;
   }
   
