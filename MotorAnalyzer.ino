@@ -45,6 +45,7 @@
 
 float G_dt = 0.002;
 float mainG_dt = 0.002;
+unsigned long previousMainTime;
 unsigned long frameCounter = 0;
 unsigned long previousTime = 0;
 unsigned long currentTime = 0;
@@ -67,6 +68,7 @@ unsigned int throttle = 1000;
 
 void writeEEPROM();
 void readEEPROM();
+void initEEPROM();
 float nvrReadFloat(int address); // defined in DataStorage.h
 void nvrWriteFloat(float value, int address); // defined in DataStorage.h
 long nvrReadLong(int address); // defined in DataStorage.h
@@ -76,20 +78,20 @@ void nvrWriteLong(long value, int address); // defined in DataStorage.h
 #include "BatteryMonitor.h"
 // Usage: #define BattCustomConfig DEFINE_BATTERY(#cells, vpin, vscale, vbias, cpin, cscale, cbias)
 // breadboarded version w/90A AttoPilot using 5V/16MHz Arduino Pro Mini
-//#define BattCustomConfig DEFINE_BATTERY(3,A0,78.5,0,A1,136.363636,0) // voltage on a0, current on a1
+#define BattCustomConfig DEFINE_BATTERY(3,A0,78.5,0,A1,136.363636,0) // voltage on a0, current on a1
 // v0.1 first prototype from DorkBot:
-#define BattCustomConfig DEFINE_BATTERY(3,A0,18.666,0,A1,40.26,0) // voltage on a0, current on a1
+//#define BattCustomConfig DEFINE_BATTERY(3,A0,18.666,0,A1,40.26,0) // voltage on a0, current on a1
 struct BatteryData batteryData = BattCustomConfig;
 
 // load cell
-char mode = '0';
-float cal[4];
-int newCalNum = 0;
 #define AREAD 0
 #define BREAD 1
 #define AWEIGHT 2
 #define BWEIGHT 3
-#define NOCAL -1
+#define NOCAL 999
+char mode = '0';
+float cal[4];
+int newCalNum = NOCAL;
 #include "LoadCell.h"
 
 // control of motor
@@ -159,13 +161,14 @@ void setup() {
   
   initializeBatteryMonitor(batteryMonitorAlarmVoltage);
   initializeMotor();
-  tareLoad = true;
   initializeLoadCell();
   
   //Serial.println();
   Serial.print("MotorAnalyzer v");
   Serial.print(swver);
   Serial.println(" by wooden");
+  
+  startTare();
 }
 
 ///////////////////////////////////////////////////////////////
@@ -175,10 +178,10 @@ void setup() {
 void loop() {
   currentTime = micros();
   deltaTime = currentTime - previousTime;
-  G_dt = (deltaTime) / 1000000.0;
-  mainG_dt = G_dt;
+  G_dt = (deltaTime) / 1000000.0; 
+  mainG_dt = currentTime - previousMainTime;
   
-  measureBattery(G_dt*1000.0);
+  measureBattery(mainG_dt*1000.0);
   
   if (deltaTime >= 10000) {
     frameCounter++;
@@ -199,6 +202,7 @@ void loop() {
     }*/
     previousTime = currentTime;
   }
+  previousMainTime = currentTime;
   
   if (frameCounter >= 10000) {
     frameCounter = 0;

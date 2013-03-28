@@ -20,15 +20,12 @@ void slowMotorRamp() {
     if (throttle == MAXCOMMAND) {
       rampUpDown = 0;
     }
-    //if (frameCounter % 1 == 0) 
-    //{
-      if (rampUpDown == 0) {
-        throttle--;
-      }
-      else if (rampUpDown == 1) {
-        throttle++;
-      }
-    //}
+    if (rampUpDown == 0) {
+      throttle--;
+    }
+    else if (rampUpDown == 1) {
+      throttle++;
+    }
   }
   if ((throttle == MINCOMMAND) && (rampUpDown == 0)) {
     stopTest();

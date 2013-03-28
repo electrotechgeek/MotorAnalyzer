@@ -68,6 +68,7 @@ typedef struct {
   float A_WEIGHT_ADR;
   float B_READ_ADR;
   float B_WEIGHT_ADR;
+  float PWM_FREQ_ADR;
   //float V_SENSE_ADR;
   //float I_SENSE_ADR;
 } t_NVR_Data;
@@ -78,6 +79,7 @@ void initEEPROM() {
   cal[BREAD] = 162;
   cal[AWEIGHT] = 99.5;
   cal[BWEIGHT] = 344.9;
+  pwmFreq = 400;
 }
 
 #define GET_NVR_OFFSET(param) ((int)&(((t_NVR_Data*) 0)->param))
@@ -91,7 +93,7 @@ void readEEPROM() {
   cal[BREAD] = readFloat(B_READ_ADR);
   cal[AWEIGHT] = readFloat(A_WEIGHT_ADR);
   cal[BWEIGHT] = readFloat(B_WEIGHT_ADR);
-  
+  pwmFreq = readLong(PWM_FREQ_ADR);
 }
 
 void writeEEPROM() {
@@ -99,6 +101,7 @@ void writeEEPROM() {
   writeFloat(cal[BREAD], B_READ_ADR);
   writeFloat(cal[AWEIGHT], A_WEIGHT_ADR);
   writeFloat(cal[BWEIGHT], B_WEIGHT_ADR);
+  writeLong(pwmFreq, PWM_FREQ_ADR);
   writeFloat(SOFTWARE_VERSION, SOFTWARE_VERSION_ADR);
 }
 

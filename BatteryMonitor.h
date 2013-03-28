@@ -20,8 +20,8 @@ struct BatteryData {
 
 // global battery data and alarms
 extern struct BatteryData batteryData;       // BatteryMonitor config, !! MUST BE DEFINED BY MAIN SKETCH !!
-extern boolean            batteryAlarm;      // any battery in alarm state used for e.g. autodescent
-extern boolean            batteryWarning;    // any battery in warning state
+extern boolean            batteryAlarm;      // battery in alarm state
+extern boolean            batteryWarning;    // battery in warning state
 
 // Helper macro to make battery definitions cleaner
 #define DEFINE_BATTERY(CELLS,VPIN,VSCALE,VBIAS,CPIN,CSCALE,CBIAS) {(VPIN),(CELLS),(short)((VSCALE)*100.0),(short)((VBIAS)*100.0),0,0,(CPIN),(short)((CSCALE)*10.0),(short)((CBIAS)*10.0),0,0,0}
@@ -56,11 +56,12 @@ int battSamples = 0;
 }*/
 
 void resetBattery() {
-  batteryData.voltage      = 1200;
-  batteryData.minVoltage   = 9900;
-  batteryData.current      = 0;
-  batteryData.maxCurrent   = 0;
-  batteryData.usedCapacity = 0;
+  batteryData.voltage         = 1200;
+  batteryData.previousVoltage = 1200;
+  batteryData.minVoltage      = 9900;
+  batteryData.current         = 0;
+  batteryData.maxCurrent      = 0;
+  batteryData.usedCapacity    = 0;
 }
 
 
@@ -113,22 +114,22 @@ void measureBattery(unsigned short deltaTime)
 {
   batteryAlarm = false;
   batteryWarning = false;
-  unsigned short tempVoltage = (long)analogRead(batteryData.vPin) * batteryData.vScale / (1L << ADC_NUMBER_OF_BITS) + batteryData.vBias;
-  if (abs(tempVoltage - batteryData.previousVoltage) < 100) { // throw out erroneous measurements
-    batteryData.voltage = tempVoltage;
-    batteryData.previousVoltage = batteryData.voltage;
-  }
-  //batteryData.voltage = (long)analogRead(batteryData.vPin);
   
+  unsigned short tempVoltage = (long)analogRead(batteryData.vPin) * batteryData.vScale / (1L << ADC_NUMBER_OF_BITS) + batteryData.vBias;
+  if (abs(tempVoltage - batteryData.previousVoltage) < 100) { // stored in 10mV, 100*10mV = 1V change, probably a bad read
+    batteryData.voltage = tempVoltage;
+  }
+  batteryData.previousVoltage = tempVoltage;
+  //batteryData.voltage = (long)analogRead(batteryData.vPin);
   if (batteryData.voltage < batteryData.minVoltage) {
     batteryData.minVoltage = batteryData.voltage;
   }
   
   short tempCurrent = (long)analogRead(batteryData.cPin) * batteryData.cScale * 10 / (1L << ADC_NUMBER_OF_BITS) + batteryData.cBias * 10;
-  if (abs(tempCurrent - batteryData.previousCurrent) < 100) { // throw out erroneous measurements
+  if (abs(tempCurrent - batteryData.previousCurrent) < 100) { // stored in 10mA, 100*10mA = 1A change, probably a bad read
     batteryData.current = tempCurrent;
-    batteryData.previousCurrent = batteryData.current;
   }
+  batteryData.previousCurrent = tempCurrent;
   if (batteryData.current > batteryData.maxCurrent) {
     batteryData.maxCurrent = batteryData.current;
   }

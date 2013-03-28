@@ -1,18 +1,25 @@
 /*
  * MotorAnalyzer Serial communications
  * Commands: 
+ * Getting data from motor analyzer:
  * 0 - not used (literally does nothing, used to continue doing current task)
  * 1 - begin slowMotorRamp
  * 2 - begin hover test (50% throttle for 15 secs)
  * b - print current battery data (continuous stream)
  * c - calibrate ESC (requires removing power from ESC and applying after a moment)
- * g - print main time loop delta
+ * f - print pwm frequency
+ * g - print main loop delta time
+ * i - initEEPROM() and recalculate gain/pwm period
  * k - print load cell calibration values
  * l - print load cell values
  * p - pulse motor 3 times
  * t - print last test start and end times (if no test run yet, returns 0,0)
  * z - zero out or TARE load cell
+ * Sending data to motor analyzer:
  * L - new Load Cell calibration - usage: Lweight where weight is the weight of the object. ex: L50.3
+ * P - change PWM frequency - usage Pfreq where freq is frequency in Hz. ex: P400 (default is 400Hz)
+ * W - write all values to EEPROM - any calibration you do is not stored until W is sent
+ * Stop all action:
  * x - stop everything
  */
 
@@ -64,11 +71,29 @@ void processSerial() {
       // calibrate ESC
       mode = 'c';
       break;
+    
+    case 'f':
+      // print pwm freq
+      Serial.print("PWM freq (Hz): ");
+      Serial.println(pwmFreq);
+      queryType = 'x';
+      break;
       
     case 'g':
       // print delta time G_dt
-      Serial.print("delta time G_dt: ");
-      Serial.println(mainG_dt);
+      Serial.print("main loop timing (us): ");
+      Serial.println(mainG_dt); 
+      queryType = 'x';
+      break;
+      
+    case 'i':
+      // init EEPROM
+      Serial.println("Initializing EEPROM");
+      initEEPROM();
+      writeEEPROM();
+      // gain and pwm freq need to be recalculated
+      initializeMotor();
+      calculateLoadGain();
       queryType = 'x';
       break;
       
@@ -124,17 +149,19 @@ void processSerial() {
         int tempDeltaCal1 = abs(newCalWeight - cal[BWEIGHT]);
         if (tempDeltaCal0 > tempDeltaCal1) {
           newCalNum = BREAD;
+          Serial.println("new cal closer to high cal, replacing high cal");
         } else {
           newCalNum = AREAD;
+          Serial.println("new cal closer to low cal, replacing low cal");
         }
-      } else { // timed out - user didn't enter a number
+      } /*else { // timed out - user didn't enter a number
         Serial.println("To calibrate the load cell, two measurements are taken with known weights.");
         Serial.println("Place a known weight on the scale and use the \"L\" command to initiate the calibration");
         Serial.println("Command \"L\" usage example: \"L50.3\" - 50.3 means the object weighs 50.3.");
         Serial.println("Unit of weight does not matter to this program - if you enter in grams, output load will be in grams.");
         newCalNum = NOCAL;
         break;
-      }
+      }*/
       
       cal[newCalNum + 2] = newCalWeight;
       Serial.print("Weight");
@@ -145,10 +172,30 @@ void processSerial() {
       digitalWrite(LEDPIN, LOW);
       queryType = '0';
       break;
+      
+    case 'P':
+      // change pwm freq
+      int temppwmFreq;
+      temppwmFreq = readFloatSerial();
+      Serial.print("Old PWM Freq: ");
+      Serial.print(pwmFreq);
+      changePWMfreq(temppwmFreq);
+      Serial.print(", new PWM Freq: ");
+      Serial.println(pwmFreq);
+      queryType = 'x';
+      break;
+      
+    case 'W':
+      // write all values to EEPROM
+      Serial.println("writing values to EEPROM . . .");
+      writeEEPROM();
+      queryType = 'x';
+      break;
+      
     
     case 'x':
       // stop everything
-      if (mode == '1') {
+      if (mode != '0') {
         stopTest();
       }
       mode = '0';
@@ -217,10 +264,13 @@ void printTestTime() {
 }
 
 void printLoad() {
-  Serial.print("rawLoad = ");
-  Serial.print(rawLoad/samples);
-  Serial.print(", load = ");
-  Serial.println(load);
+
+  Serial.print("load = ");
+  Serial.print(load);
+  Serial.print("g, loadNoGain = ");
+  Serial.print(loadNoGain);
+  Serial.print(", loadAvg = ");
+  Serial.println(loadAvg);
 }
 
 void printLoadCal() {
@@ -232,7 +282,8 @@ void printLoadCal() {
   Serial.print(cal[BREAD]);
   Serial.print(", bWeight = ");
   Serial.print(cal[BWEIGHT]);
-  Serial.println(" g");
+  Serial.print(" g, gain: ");
+  Serial.println(calGain);
 }
 
 

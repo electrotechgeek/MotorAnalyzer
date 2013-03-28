@@ -3,6 +3,8 @@
  */
 
 int rampUpDown = 0; // 1 for up, 0 for down
+long pwmFreq;
+float pwmCounterPeriod;
 
 // function prototypes
 void writeMotor(int command);
@@ -41,7 +43,7 @@ void processMotor() {
       break;     
   }
   
-  if (batteryAlarm) {
+  if (testRunning && batteryAlarm) {
     stopTest();
   }
   
@@ -62,9 +64,11 @@ void pulseMotor(byte nbPulse) {
   }
 }
 
-#define PWM_FREQUENCY 400 // in Hz
+//#define PWM_FREQUENCY 400 // in Hz
 #define PWM_PRESCALER 8
-#define PWM_COUNTER_PERIOD (F_CPU/PWM_PRESCALER/PWM_FREQUENCY)
+//#define PWM_COUNTER_PERIOD (F_CPU/PWM_PRESCALER/PWM_FREQUENCY)
+
+
 
 void initializeMotor() {
   DDRB = DDRB | B00000010; // set port to output PB1 - digital pin 9
@@ -75,10 +79,16 @@ void initializeMotor() {
   // initialize PWM timer 1 - 16 bit
   TCCR1A = ((1<<WGM11)|(1<<COM1A1));            // fast PWM mode, output on a1
   TCCR1B = ((1<<WGM13)|(1<<WGM12)|(1<<CS11));
-  ICR1 = PWM_COUNTER_PERIOD;
+  pwmCounterPeriod = F_CPU/PWM_PRESCALER/pwmFreq;
+  ICR1 = pwmCounterPeriod;
 }
 
 void writeMotor(int command) {
   OCR1A = command * 2;  // pin 9.
+}
+
+void changePWMfreq(int newpwmFreq) {
+  pwmFreq = newpwmFreq;
+  initializeMotor();
 }
 
