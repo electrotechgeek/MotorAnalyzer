@@ -41,7 +41,6 @@
 #define TASK_25HZ 4
 //#define TASK_10HZ 10
 //#define TASK_1HZ 100
-#define THROTTLE_ADJUST_TASK_SPEED TASK_50HZ
 
 float G_dt = 0.002;
 float mainG_dt = 0.002;
