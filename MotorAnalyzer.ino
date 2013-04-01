@@ -1,7 +1,7 @@
 /*
     Motor Analyzer
     written by Chip Wood
-    March 27, 2013
+    March 28, 2013
     
     !!! SAFETY WARNING !!!
       This program will cause a motor to go from no throttle to full throttle! If you're
@@ -18,9 +18,13 @@
    Software: This software was initially designed to work with an Arduino Pro Mini 5V/16MHz,
              AttoPilot current/voltage sensor, and a load cell amplified by an INA125.
              There is a PCB in the works (first prototypes have been received but not tested)
-             that can easily be configured to work with different ranges of voltages anc current.
+             that can easily be configured to work with different ranges of voltages and current.
              The defaults for the first iteration are 18V and 40A. Exceeding these values
-             will damage the microcontroller.             
+             will damage the microcontroller.
+             
+             to do:
+             * allow user to change slowMotorRamp length, store in EEPROM
+             * fix analog port definitions: increase speed
  */
  
 

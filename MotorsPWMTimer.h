@@ -57,7 +57,7 @@ void processMotor() {
 
 void pulseMotor(byte nbPulse) {
   for (byte i = 0; i < nbPulse; i++) {
-    writeMotor(MINCOMMAND + 100);
+    writeMotor(MINCOMMAND + 200);
     delay(250);
     writeMotor(MINCOMMAND);
     delay(250);

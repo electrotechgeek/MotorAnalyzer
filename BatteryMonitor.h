@@ -66,20 +66,20 @@ void resetBattery() {
 
 
 byte batteryGetCellCount() {
-  if (batteryData.cells) {
+  /*if (batteryData.cells) {
     return batteryData.cells;
   }
-  else if (batteryData.voltage < 500) {
-    return 1;
+  else*/ if (batteryData.voltage < 500) {
+    batteryData.cells = 1;
   }
   else if (batteryData.voltage < 860) {
-    return 2;
+    batteryData.cells = 2;
   }
   else if (batteryData.voltage < 1300) {
-    return 3;
+    batteryData.cells = 3;
   } 
   else {
-    return 4;
+    batteryData.cells = 4;
   }
 }
 
@@ -116,7 +116,7 @@ void measureBattery(unsigned short deltaTime)
   batteryWarning = false;
   
   unsigned short tempVoltage = (long)analogRead(batteryData.vPin) * batteryData.vScale / (1L << ADC_NUMBER_OF_BITS) + batteryData.vBias;
-  if (abs(tempVoltage - batteryData.previousVoltage) < 100) { // stored in 10mV, 100*10mV = 1V change, probably a bad read
+  if ((abs(tempVoltage - batteryData.previousVoltage) < 100) || (deltaTime == 0)) { // stored in 10mV, 100*10mV = 1V change, probably a bad read
     batteryData.voltage = tempVoltage;
   }
   batteryData.previousVoltage = tempVoltage;
