@@ -3,78 +3,28 @@
  * 
  * Handles EEPROM value reading/saving
  */
+ 
+float nvrReadFloat(int address);
+void nvrWriteFloat(float value, int address);
+long nvrReadLong(int address);
+void nvrWriteLong(long value, int address);
 
-
-
-float nvrReadFloat(int address) {
-  union floatStore {
-    byte floatByte[4];
-    unsigned short floatUShort[2];
-    float floatVal;
-  } floatOut;
-
-  for (int i = 0; i < 4; i++) {
-    floatOut.floatByte[i] = EEPROM.read(address + i);
-  }
-
-  return floatOut.floatVal;
-}
-
-void nvrWriteFloat(float value, int address) {
-  union floatStore {
-    byte floatByte[4];
-    unsigned short floatUShort[2];
-    float floatVal;
-  } floatIn;
-
-  floatIn.floatVal = value;
-
-  for (int i = 0; i < 4; i++) {
-    EEPROM.write(address + i, floatIn.floatByte[i]);
-  }
-}
-
-long nvrReadLong(int address) {
-  union longStore {
-    byte longByte[4];
-    unsigned short longUShort[2];
-    long longVal;
-  } longOut;  
-
-  for (byte i = 0; i < 4; i++) {
-    longOut.longByte[i] = EEPROM.read(address + i);
-  }
-    
-  return longOut.longVal;
-}
-
-void nvrWriteLong(long value, int address) {
-  union longStore {
-    byte longByte[4];
-    unsigned short longUShort[2];
-    long longVal;
-  } longIn;  
-
-  longIn.longVal = value;
-  
-  for (int i = 0; i < 4; i++) {
-    EEPROM.write(address + i, longIn.longByte[i]);
-  }
-}
-
-typedef struct { 
+typedef struct 
+{ 
   float SOFTWARE_VERSION_ADR;
   float A_READ_ADR;
   float A_WEIGHT_ADR;
   float B_READ_ADR;
   float B_WEIGHT_ADR;
   float PWM_FREQ_ADR;
+  float MIN_ARMED_THROTTLE_ADR;
   //float V_SENSE_ADR;
   //float I_SENSE_ADR;
 } t_NVR_Data;
 
 
-void initEEPROM() {
+void initEEPROM() 
+{
   cal[AREAD] = 68;
   cal[BREAD] = 162;
   cal[AWEIGHT] = 99.5;
@@ -88,21 +38,107 @@ void initEEPROM() {
 #define readLong(addr) nvrReadLong(GET_NVR_OFFSET(addr))
 #define writeLong(value, addr) nvrWriteLong(value, GET_NVR_OFFSET(addr))
 
-void readEEPROM() { 
+void readEEPROM() 
+{ 
   cal[AREAD] = readFloat(A_READ_ADR);
   cal[BREAD] = readFloat(B_READ_ADR);
   cal[AWEIGHT] = readFloat(A_WEIGHT_ADR);
   cal[BWEIGHT] = readFloat(B_WEIGHT_ADR);
   pwmFreq = readLong(PWM_FREQ_ADR);
+  minArmedThrottle = readLong(MIN_ARMED_THROTTLE_ADR);
 }
 
-void writeEEPROM() {
+void writeEEPROM() 
+{
+  writeFloat(SOFTWARE_VERSION, SOFTWARE_VERSION_ADR);
   writeFloat(cal[AREAD], A_READ_ADR);
   writeFloat(cal[BREAD], B_READ_ADR);
   writeFloat(cal[AWEIGHT], A_WEIGHT_ADR);
   writeFloat(cal[BWEIGHT], B_WEIGHT_ADR);
   writeLong(pwmFreq, PWM_FREQ_ADR);
-  writeFloat(SOFTWARE_VERSION, SOFTWARE_VERSION_ADR);
+  writeLong(minArmedThrottle, MIN_ARMED_THROTTLE_ADR);
 }
 
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+
+float nvrReadFloat(int address) 
+{
+  union floatStore {
+    byte floatByte[4];
+    unsigned short floatUShort[2];
+    float floatVal;
+  } floatOut;
+
+  for (int i = 0; i < 4; i++) 
+    floatOut.floatByte[i] = EEPROM.read(address + i);
+
+  return floatOut.floatVal;
+}
+
+void nvrWriteFloat(float value, int address) 
+{
+  union floatStore {
+    byte floatByte[4];
+    unsigned short floatUShort[2];
+    float floatVal;
+  } floatIn;
+
+  floatIn.floatVal = value;
+
+  for (int i = 0; i < 4; i++)
+    EEPROM.write(address + i, floatIn.floatByte[i]);
+}
+
+long nvrReadLong(int address) 
+{
+  union longStore {
+    byte longByte[4];
+    unsigned short longUShort[2];
+    long longVal;
+  } longOut;  
+
+  for (byte i = 0; i < 4; i++) 
+    longOut.longByte[i] = EEPROM.read(address + i);
+    
+  return longOut.longVal;
+}
+
+void nvrWriteLong(long value, int address) 
+{
+  union longStore {
+    byte longByte[4];
+    unsigned short longUShort[2];
+    long longVal;
+  } longIn;  
+
+  longIn.longVal = value;
+  
+  for (int i = 0; i < 4; i++) 
+    EEPROM.write(address + i, longIn.longByte[i]);
+}
 

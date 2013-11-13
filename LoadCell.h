@@ -38,14 +38,16 @@ void calculateLoadGain();
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-void initializeLoadCell() {
+void initializeLoadCell() 
+{
   //DDRC |= B0000100;        // enable PC2 - TODO: Fix this and battery monitor initialization
   pinMode(LOADPIN, INPUT);
   calculateLoadGain();
 }
 
 
-void averageLoadCell() {
+void averageLoadCell() 
+{
   loadAvg = rawLoad / samples;
   samples = 0;
   rawLoad = 0;
@@ -54,16 +56,17 @@ void averageLoadCell() {
   newLoadAvgAvail = true;
 }
 
-void readLoadCell() {
+void readLoadCell() 
+{
   rawLoad += (long)analogRead(LOADPIN);
   samples++;
   
-  if (frameCounter % TASK_25HZ == 0) {
+  if (frameCounter % TASK_25HZ == 0)
     averageLoadCell();
-  }
 }
 
-void calculateLoadGain() {
+void calculateLoadGain() 
+{
   calGain = (cal[BWEIGHT] - cal[AWEIGHT])/(cal[BREAD] - cal[AREAD]);
 }
 
@@ -72,7 +75,8 @@ void calculateLoadGain() {
  * sum up readings over time and average them
  * store the new average and report the findings
  */
-void calibrateLoadCell() {
+void calibrateLoadCell() 
+{
   if (newCalNum != NOCAL) {
     if (newLoadAvgAvail) {
       calSum += loadAvg;
@@ -86,7 +90,7 @@ void calibrateLoadCell() {
       calCounter = 0;
       rawLoadRead = false;
       mode = '0';
-      queryType = 'x';
+      query = 'x';
       Serial.print("weight: ");
       Serial.print(cal[newCalNum + 2]);
       Serial.print("g, raw reading: ");
@@ -99,7 +103,8 @@ void calibrateLoadCell() {
   }
 }
 
-void startTare() {
+void startTare() 
+{
   tareLoad = true;
   tareCounter = 0;
   tareSum = 0;
@@ -110,15 +115,17 @@ void startTare() {
   
 }
 
-void tareLoadCell() {
-  if (tareLoad) {
-    if (newLoadAvgAvail) {
+void tareLoadCell() 
+{
+  if (tareLoad) 
+  {
+    if (newLoadAvgAvail) 
+    {
       tareSum += loadAvg;
       tareCounter++;
       newLoadAvgAvail = false;
-      if ((tareCounter % 5) == 0) {
+      if ((tareCounter % 5) == 0) 
         Serial.println(tareSum / tareCounter);
-      }
     }
     
     if (tareCounter >= 20) {
@@ -139,7 +146,8 @@ void tareLoadCell() {
  *
  * called at 100Hz
  */
-void processLoadCell() {  
+void processLoadCell() 
+{  
   readLoadCell();
   tareLoadCell();
   calibrateLoadCell();

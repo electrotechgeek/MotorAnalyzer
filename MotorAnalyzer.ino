@@ -23,7 +23,7 @@
              will damage the microcontroller.
              
              to do:
-             * allow user to change slowMotorRamp length, store in EEPROM
+             * allow user to change primaryTest length, store in EEPROM
              * fix analog port definitions: increase speed
  */
  
@@ -34,7 +34,7 @@
 #include "pins_arduino.h"
 #include <EEPROM.h>
 
-#define SOFTWARE_VERSION 0.1
+#define SOFTWARE_VERSION 0.2
 #define BAUD 115200
 #define ADC_NUMBER_OF_BITS 10
 #define LEDPIN 13
@@ -46,28 +46,27 @@
 //#define TASK_10HZ 10
 //#define TASK_1HZ 100
 
-float G_dt = 0.002;
-float mainG_dt = 0.002;
-unsigned long previousMainTime;
-unsigned long frameCounter = 0;
-unsigned long previousTime = 0;
-unsigned long currentTime = 0;
-unsigned long deltaTime = 0;
-//unsigned long oneHZpreviousTime = 0;
-//unsigned long tenHZpreviousTime = 0;
-unsigned long twentyfiveHZpreviousTime = 0;
-unsigned long fiftyHZpreviousTime = 0;
-unsigned long hundredHZpreviousTime = 0;
-unsigned long testStartTime = 0;
-unsigned long testEndTime = 0;
-boolean firstIteration = false;
-boolean testRunning = false;
+float mainG_dt, G_dt, G_dt_100, G_dt_50, G_dt_25, G_dt_10, G_dt_5, G_dt_1 = 0.002;
+int16_t previousMainTime, frameCounter, previousTime, currentTime, deltaTime = 0;
+/*uint_16t frameCounter = 0;
+uint_16t previousTime = 0;
+uint_16t currentTime = 0;
+uint_16t deltaTime = 0;*/
+//uint_16t oneHZpreviousTime = 0;
+//uint_16t tenHZpreviousTime = 0;
+int16_t twentyfiveHZpreviousTime, fiftyHZpreviousTime, hundredHZpreviousTime = 0;
+/*int_16t fiftyHZpreviousTime = 0;
+int_16t hundredHZpreviousTime = 0;*/
+int16_t testStartTime, testEndTime = 0;
+//int_16t testEndTime = 0;
+int8_t testRunning, firstIteration = false;
+//int8_t testRunning = false;
 void startTest();
 void stopTest();
 
-char queryType = 'x';
+char query = 'x';
 
-unsigned int throttle = 1000;
+int16_t throttle = 1000;
 
 void writeEEPROM();
 void readEEPROM();
@@ -94,21 +93,23 @@ struct BatteryData batteryData = BattCustomConfig;
 #define NOCAL 999
 char mode = '0';
 float cal[4];
-int newCalNum = NOCAL;
+int16_t newCalNum = NOCAL;
 #include "LoadCell.h"
 
 // control of motor
 #define MINCOMMAND 1000
 #define MAXCOMMAND 2000
-void slowMotorRamp();
+void primaryTest();
 #include "MotorsPWMTimer.h"
 
 
-// serial transmission
-#include "SerialComm.h"
-
 // different data collection modes
 #include "Modes.h"
+
+// serial transmission
+//#include "SerialComm.h"
+#include "CLI.h"
+#include "CLImotor.h"
 
 // EEPROM
 #include "DataStorage.h"
@@ -120,19 +121,23 @@ void slowMotorRamp();
 ///////////////////////////////////////////////////////////////
 void process100() {
   G_dt = (currentTime - hundredHZpreviousTime) / 1000000.0;
+  G_dt_100 = G_dt;
   hundredHZpreviousTime = currentTime;
   
+  modeHandler();
   processLoadCell();
   processMotor();
 }
 
 void process50() {
   G_dt = (currentTime - fiftyHZpreviousTime) / 1000000.0;
+  G_dt_50 = G_dt;
   fiftyHZpreviousTime = currentTime;
 }
 
 void process25() {
   G_dt = (currentTime - twentyfiveHZpreviousTime) / 1000000.0;
+  G_dt_25 = G_dt;
   twentyfiveHZpreviousTime = currentTime;
   
   processSerial(); // actually prints at 25Hz, need to try to optimize code to get data at 50Hz
@@ -141,11 +146,13 @@ void process25() {
 
 /*void process10() {
   G_dt = (currentTime - tenHZpreviousTime) / 1000000.0;
+  G_dt_10 = G_dt;
   tenHZpreviousTime = currentTime;
 }
 
 void process1() {
   G_dt = (currentTime - oneHZpreviousTime) / 1000000.0;
+  G_dt_1 = G_dt;
   oneHZpreviousTime = currentTime;
 }*/
 
@@ -153,11 +160,13 @@ void process1() {
 ///////////////////////////////////////////////////////////////
 ///////////////////////////// SETUP ///////////////////////////
 ///////////////////////////////////////////////////////////////
-void setup() {
+void setup() 
+{
   readEEPROM();
   Serial.begin(115200);
   float swver = readFloat(SOFTWARE_VERSION_ADR);
-  if (swver != SOFTWARE_VERSION) {
+  if (swver != SOFTWARE_VERSION) 
+  {
     initEEPROM();
     writeEEPROM();
   }
@@ -186,30 +195,30 @@ void loop() {
   
   measureBattery(mainG_dt*1000.0);
   
-  if (deltaTime >= 10000) {
+  if (deltaTime >= 10000) 
+  {
     frameCounter++;
     process100();
     
-    if (frameCounter % TASK_50HZ == 0 ) {
+    if (frameCounter % TASK_50HZ == 0 ) 
       process50();
-    }
-    if (frameCounter % TASK_25HZ == 0 ) {
+    
+    if (frameCounter % TASK_25HZ == 0 ) 
       process25();
-    }
+    
     // no functions in process10 or 1 currently, don't bother running
-    /*if (frameCounter % TASK_10HZ == 0 ) {
+    /*if (frameCounter % TASK_10HZ == 0 ) 
       process10();
-    }
-    if (frameCounter % TASK_1HZ == 0 ) {
-      process1();
-    }*/
+    
+    if (frameCounter % TASK_1HZ == 0 ) 
+      process1();*/
+    
     previousTime = currentTime;
   }
   previousMainTime = currentTime;
   
-  if (frameCounter >= 10000) {
+  if (frameCounter >= 10000)
     frameCounter = 0;
-  }
 }
 
 

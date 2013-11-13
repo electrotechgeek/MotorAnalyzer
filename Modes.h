@@ -3,36 +3,76 @@
  * Chip Wood Mar 2013
  */
  
+#define CALIBRATE_ESC 'c'
+#define PRIMARY_TEST 'p'
+#define RESPONSE_TEST 'r'
+#define HOVER_TEST 'h'
+#define STOP 'X'
 
- 
+void printTestStart();
+void printTestTime(); 
+
+boolean rampUp = true; // true for up, false for down
+
+
+void modeHandler()
+{
+  switch (mode) 
+  {
+    case '0':
+      // do nothing, waiting for command to start
+      throttle = MINCOMMAND;      
+      break;
+      
+    case 'p':                           // Primary Test: primaryTest()
+      if (firstIteration) {
+        startTest();
+        rampUp = true;                  // set ramping to up
+      }
+      primaryTest();
+      break;
+      
+    case 'c':
+      // calibrate ESC, send MAXCOMMAND for 3s
+      Serial.println("SENDING MAXCOMMAND to motors for 3s, make sure props are off!!!!");
+      throttle = MAXCOMMAND;
+      writeMotor(throttle);
+      delay(3000);
+      Serial.println("Now sending MINCOMMAND to motors...");
+      mode = STOP;
+      query = 'x';
+      break;     
+  }
+  
+  if (testRunning && batteryAlarm) stopTest(); 
+}
+
 /*
- * slowMotorRamp()
+ * primaryTest()
  * 
- * over 60 seconds, increase throttle to max and then back steadily
+ * over user defined # of seconds, increase throttle to max and then back steadily
  * increase throttle from 1000 to 2000 in 30 sec and back in 30 sec
  * frameCounter = 100Hz counter
  * 1000/30 = 33.333333 times a second we need to increase throttle
  * divide counter by 3 to get 33 times a second, close enough
  */
-void slowMotorRamp() {
-  if ((throttle <= MAXCOMMAND) && (throttle >= MINCOMMAND)) 
+void primaryTest() 
+{
+  if ((throttle <= MAXCOMMAND) && (throttle >= minArmedThrottle)) 
   {
-    if (throttle == MAXCOMMAND) {
-      rampUpDown = 0;
-    }
-    if (rampUpDown == 0) {
-      throttle--;
-    }
-    else if (rampUpDown == 1) {
-      throttle++;
-    }
+    if (throttle == MAXCOMMAND) 
+      rampUp = false;
+    
+    if (rampUp) throttle++; 
+    else throttle--; 
   }
-  if ((throttle == MINCOMMAND) && (rampUpDown == 0)) {
+  
+  if ((throttle <= MINCOMMAND) && (!rampUp)) 
     stopTest();
-  }
 }
 
-void startTest() {
+void startTest() 
+{
   firstIteration = false;
   testRunning = true;
   testStartTime = currentTime;
@@ -40,11 +80,12 @@ void startTest() {
   printTestStart();
 }
 
-void stopTest() {
+void stopTest() 
+{
   testEndTime = currentTime;
-  mode = '0';
-  throttle = MINCOMMAND;
+  mode = STOP;
+  stopMotor();
   testRunning = false;
   printTestTime();
-  queryType = 'x';
+  query = 'x';
 }

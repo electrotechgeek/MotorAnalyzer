@@ -2,30 +2,57 @@
  * MotorAnalyzer Serial communications
  * Commands: 
  * Getting data from motor analyzer:
- * 0 - not used (literally does nothing, used to continue doing current task)
- * 1 - begin slowMotorRamp
- * 2 - begin hover test (50% throttle for 15 secs)
- * b - print current battery data (continuous stream)
- * c - calibrate ESC (requires removing power from ESC and applying after a moment)
+ * //0 - not used (literally does nothing, used to continue doing current task)
+ * //1 - begin primaryTest
+ * //2 - begin hover test (50% throttle for 15 secs)
+ * //b - print current battery data (continuous stream)
+ * //c - calibrate ESC (requires removing power from ESC and applying after a moment)
  * f - print pwm frequency
- * g - print main loop delta time
- * i - initEEPROM() and recalculate gain/pwm period
+ * //g - print main loop delta time
+ * //i - initEEPROM() and recalculate gain/pwm period
  * k - print load cell calibration values
- * l - print load cell values
- * p - pulse motor 3 times
- * t - print last test start and end times (if no test run yet, returns 0,0)
- * z - zero out or TARE load cell
+ * //l - print load cell values
+ * //p - pulse motor 3 times
+ * //t - print last test start and end times (if no test run yet, returns 0,0)
+ * //z - zero out or TARE load cell
  * Sending data to motor analyzer:
  * L - new Load Cell calibration - usage: Lweight where weight is the weight of the object. ex: L50.3
  * P - change PWM frequency - usage Pfreq where freq is frequency in Hz. ex: P400 (default is 400Hz)
- * W - write all values to EEPROM - any calibration you do is not stored until W is sent
+ * //W - write all values to EEPROM - any calibration you do is not stored until W is sent
  * Stop all action:
  * x - stop everything
  */
+ 
+/*Serial.print("a -                                 | A - \n");
+Serial.print("b -                                 | B - \n");
+Serial.print("c -                                 | C - \n");
+Serial.print("d -                                 | D - \n");
+Serial.print("e -                                 | E - \n");
+Serial.print("f -                                 | F - \n");
+Serial.print("g -                                 | G - \n");
+Serial.print("h -                                 | H - \n");
+Serial.print("i -                                 | I - \n");
+Serial.print("j -                                 | J - \n");
+Serial.print("k -                                 | K - \n");
+Serial.print("l -                                 | L - \n");
+Serial.print("m -                                 | M - \n");
+Serial.print("n -                                 | N - \n");
+Serial.print("o -                                 | O - \n");
+Serial.print("p -                                 | P - \n");
+Serial.print("q -                                 | Q - \n");
+Serial.print("r -                                 | R - \n");
+Serial.print("s -                                 | S - \n");
+Serial.print("t -                                 | T - \n");
+Serial.print("u -                                 | U - \n");
+Serial.print("v -                                 | V - \n");
+Serial.print("w -                                 | W - \n");
+Serial.print("x -                                 | X - \n");
+Serial.print("y -                                 | Y - \n");
+Serial.print("z -                                 | Z - \n");*/
 
 
 
-
+void motorSetupCLI();
 void sendData();
 void printBatteryData();
 void printTestStart();
@@ -36,54 +63,128 @@ void readValueSerial(char *data, byte size);
 float readFloatSerial();
 long readIntegerSerial();
 void comma();
+
 float newCalWeight;
 
-void processSerial() {
-  if (Serial.available()) {
-    queryType = Serial.read();
-  }
-  switch (queryType) {
-    case '0':
+uint8_t cliBusy, validQuery = false;
+
+
+void processSerial() 
+{
+  if (Serial.available() && !validQuery) 
+    query = Serial.read();
+    
+  switch (query) 
+  {
+    case '?':
+      // help
+      cliBusy = true;
+      
+      Serial.print("Motor Analyzer v0.2 CLI\n");
+      Serial.print("Lower case letters print data, capitals used to change settings\n");
+      Serial.print("1 - Primary test - see \"Primary Test CLI\"\n");
+      Serial.print("2 - Response test - see \"Response Test CLI\"\n");
+      Serial.print("3 - Hover test - see \"Hover Test CLI\"\n");
+      Serial.print("a - print current load cell data             | A - open Load Cell CLI\n");
+      Serial.print("b - print current battery data               | B - open Battery CLI\n");
+      Serial.print("c - calibrate ESC - REMOVE PROPS FIRST!!!    | C - open Motor Setup CLI\n");
+      Serial.print("d -                                          | D - Motor Test CLI\n");
+      /*Serial.print("e -                                          | E - \n");
+      Serial.print("f -                                          | F - \n");
+      Serial.print("g -                                          | G - \n");
+      Serial.print("h -                                          | H - \n");*/
+      Serial.print("i - re-initialize EEPROM (restore defaults)  | I - \n");
+      /*Serial.print("j -                                          | J - \n");
+      Serial.print("k -                                          | K - \n");*/
+      Serial.print("l - print timing loop deltas (ms)            | L - \n");
+      Serial.print("\nPress space bar for more or enter a command....\n");
+      
+      while (!Serial.available());
+      query = Serial.read();
+      if (query != ' ') {
+        validQuery = true;
+        cliBusy = false;
+        return; 
+      }
+      
+      Serial.print("\n");
+      /*Serial.print("m -                                          | M - \n");
+      Serial.print("n -                                          | N - \n");
+      Serial.print("o -                                          | O - \n");*/
+      Serial.print("p - pulse motor three times                  | P - \n");
+      /*Serial.print("q -                                          | Q - \n");
+      Serial.print("r -                                          | R - \n");
+      Serial.print("s -                                          | S - \n");*/
+      Serial.print("t - print last test start and end times      | T - \n");
+      /*Serial.print("u -                                          | U - \n");
+      Serial.print("v -                                          | V - \n");*/
+      Serial.print("w -                                          | W - Write all values to EEPROM\n");
+      Serial.print("x - stop EVERYTHING                          | X - \n");
+      //Serial.print("y -                                          | Y - \n");
+      Serial.print("z - zero out or tare load cell               | Z - \n");
+
+      query = 'x';
+      cliBusy = false;
+      break;
+      
+    case '+':
       // continue doing whatever is currently happening
       break;
     
     case '1':
       // begin primary data collection
-      mode = '1';
-      if (!testRunning) {
-        firstIteration = true;
-      }
+      mode = PRIMARY_TEST;
+      if (!testRunning) { firstIteration = true; }
       sendData();
+      validQuery = false;
       break;
     
     case '2':
       // begin response data collection
-      mode = '2';
+      mode = RESPONSE_TEST;
       firstIteration = true;
+      validQuery = false;
+      break;
+    
+    case '3':
+      // begin hover data collection
+      mode = HOVER_TEST;
+      firstIteration = true;
+      validQuery = false;
+      break;
+      
+    case 'a':
+      // print load cell values
+      printLoad();
+      //query = 'x';
       break;
     
     case 'b':
       // print current battery levels, total current usage, and current used during last test
       printBatteryData();
+      validQuery = false;
       break;
     
     case 'c':
       // calibrate ESC
-      mode = 'c';
+      mode = CALIBRATE_ESC;
+      validQuery = false;
       break;
     
     case 'f':
       // print pwm freq
       Serial.print("PWM freq (Hz): ");
       Serial.println(pwmFreq);
-      queryType = 'x';
+      query = 'x';
+      validQuery = false;
       break;
       
     case 'g':
       // print delta time G_dt
       Serial.print("main loop timing (us): ");
       Serial.println(mainG_dt); 
-      queryType = 'x';
+      query = 'x';
+      validQuery = false;
       break;
       
     case 'i':
@@ -94,38 +195,60 @@ void processSerial() {
       // gain and pwm freq need to be recalculated
       initializeMotor();
       calculateLoadGain();
-      queryType = 'x';
+      query = 'x';
+      validQuery = false;
       break;
       
     case 'k':
       // print load cell calibration
       printLoadCal();
-      queryType = 'x';
+      query = 'x';
+      validQuery = false;
       break;
       
     case 'l':
-      // print load cell values
-      printLoad();
+      query = 'x';
+      validQuery = false;
       break;
       
     case 'p':
       // pulse motor
       pulseMotor(3);
-      queryType = 'x';
+      query = 'x';
+      validQuery = false;
       break;
       
     case 't':    // send test start and end time
       printTestTime();
-      queryType = 'x';
+      query = 'x';
+      validQuery = false;
       break;
       
     case 'z':
       // zero out, or TARE, load cell
       startTare();
-      queryType = 'x';
+      query = 'x';
+      validQuery = false;
       break;
       
     
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    //////////////////////////// Writing values ///////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+    
+    case 'C':
+      // Motor Setup CLI
+      stopMotor();
+      motorSetupCLI();
+      query = 'x';
+      validQuery = false;
+      break;
       
     case 'L':
       //change load cell calibration
@@ -135,14 +258,18 @@ void processSerial() {
       
       // catch if we already have this calibration
       // or if we're obviously replacing low or high cal
-      if (newCalWeight <= cal[AWEIGHT]) {
+      if (newCalWeight <= cal[AWEIGHT]) 
+      {
         newCalNum = AREAD;
         Serial.println("Replacing low calibration");
-      } else if (newCalWeight >= cal[BWEIGHT]) {
+      } 
+      else if (newCalWeight >= cal[BWEIGHT]) 
+      {
         newCalNum = BREAD;
         Serial.println("Replacing high calibration");
       }
-      else if ((newCalWeight > cal[AWEIGHT]) && (newCalWeight < cal[BWEIGHT])){
+      else if ((newCalWeight > cal[AWEIGHT]) && (newCalWeight < cal[BWEIGHT]))
+      {
         // new calibration weight is in between previous readings
         // find which it's closer to, replace that one
         int tempDeltaCal0 = abs(newCalWeight - cal[AWEIGHT]);
@@ -150,7 +277,9 @@ void processSerial() {
         if (tempDeltaCal0 > tempDeltaCal1) {
           newCalNum = BREAD;
           Serial.println("new cal closer to high cal, replacing high cal");
-        } else {
+        } 
+        else 
+        {
           newCalNum = AREAD;
           Serial.println("new cal closer to low cal, replacing low cal");
         }
@@ -170,36 +299,40 @@ void processSerial() {
       Serial.println(newCalWeight);
       rawLoadRead = true;
       digitalWrite(LEDPIN, LOW);
-      queryType = '0';
+      query = '+';
+      validQuery = false;
       break;
       
     case 'P':
       // change pwm freq
-      int temppwmFreq;
+      /*int temppwmFreq;
       temppwmFreq = readFloatSerial();
       Serial.print("Old PWM Freq: ");
       Serial.print(pwmFreq);
       changePWMfreq(temppwmFreq);
       Serial.print(", new PWM Freq: ");
-      Serial.println(pwmFreq);
-      queryType = 'x';
+      Serial.println(pwmFreq);*/
+      query = 'x';
+      validQuery = false;
       break;
       
     case 'W':
       // write all values to EEPROM
       Serial.println("writing values to EEPROM . . .");
       writeEEPROM();
-      queryType = 'x';
+      query = 'x';
       break;
       
     
     case 'x':
       // stop everything
-      if (mode != '0') {
+      if (mode != STOP) {
         stopTest();
+        query = '+';
       }
-      mode = '0';
+      mode = STOP;
       firstIteration = false;
+      validQuery = false;
       break;
   }
 }
@@ -217,7 +350,8 @@ void processSerial() {
 ///////////////////////////////////////////////////////////////////////////
 
 
-void sendData() {
+void sendData() 
+{
   Serial.print((float)(currentTime - testStartTime)/1000);    // currentTime stored in uS, displayed in mS
   Serial.print(",");
   Serial.print(throttle / 10 - 100);                   // percentage. range of 1000-2000 -> 1000/10 = 100 - 100 = 0%
@@ -232,7 +366,8 @@ void sendData() {
   Serial.println(",");
 }
 
-void printBatteryData() {
+void printBatteryData() 
+{
   Serial.print("Cells: ");
   Serial.print(batteryData.cells);
   Serial.print(", V: ");
@@ -247,12 +382,14 @@ void printBatteryData() {
   Serial.println((float)(batteryData.usedCapacity - batteryData.testStartUsedCapacity)/1000);
 }
 
-void printTestStart() {
+void printTestStart() 
+{
   Serial.println("Beginning test");
   Serial.println("elapsedTime (ms),throttle,V,I (amps),used I (mAh),thrust (g)");
 }
 
-void printTestTime() {
+void printTestTime() 
+{
   float testDuration = (float)(testEndTime - testStartTime) / 1000000;
   Serial.print("Start: ");
   Serial.print((float)testStartTime / 1000000); // u
@@ -263,8 +400,8 @@ void printTestTime() {
   Serial.println(" sec");
 }
 
-void printLoad() {
-
+void printLoad() 
+{
   Serial.print("load = ");
   Serial.print(load);
   Serial.print("g, loadNoGain = ");
