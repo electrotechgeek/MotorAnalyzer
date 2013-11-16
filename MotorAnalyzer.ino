@@ -1,10 +1,12 @@
 /*
     Motor Analyzer
     written by Chip Wood
-    March 28, 2013
+    Project started March 2013
+    
+    https://www.github.com/imchipwood/MotorAnalyzer/
     
     !!! SAFETY WARNING !!!
-      This program will cause a motor to go from no throttle to full throttle! If you're
+      This program is capable of making a motor go full throttle! If you're
       doing what it was designed for, this means props are on and it can lift off or 
       damage anything in the path of the props! Ensure the motor is strapped down well
       and cannot move no matter how hard the motor pulls or pushes!
@@ -22,10 +24,10 @@
              The defaults for the first iteration are 18V and 40A. Exceeding these values
              will damage the microcontroller.
              
-             to do:
-             * allow user to change primaryTest length, store in EEPROM
-             * fix analog port definitions: increase speed
+
  */
+ 
+#define SOFTWARE_VERSION 0.2
  
 
 #include <stdlib.h>
@@ -34,87 +36,25 @@
 #include "pins_arduino.h"
 #include <EEPROM.h>
 
-#define SOFTWARE_VERSION 0.2
-#define BAUD 115200
-#define ADC_NUMBER_OF_BITS 10
-#define LEDPIN 13
+#include "globals.h"
 
-// timing
-#define TASK_100HZ 1
-#define TASK_50HZ 2
-#define TASK_25HZ 4
-//#define TASK_10HZ 10
-//#define TASK_1HZ 100
-
-float mainG_dt, G_dt, G_dt_100, G_dt_50, G_dt_25, G_dt_10, G_dt_5, G_dt_1 = 0.002;
-int16_t previousMainTime, frameCounter, previousTime, currentTime, deltaTime = 0;
-/*uint_16t frameCounter = 0;
-uint_16t previousTime = 0;
-uint_16t currentTime = 0;
-uint_16t deltaTime = 0;*/
-//uint_16t oneHZpreviousTime = 0;
-//uint_16t tenHZpreviousTime = 0;
-int16_t twentyfiveHZpreviousTime, fiftyHZpreviousTime, hundredHZpreviousTime = 0;
-/*int_16t fiftyHZpreviousTime = 0;
-int_16t hundredHZpreviousTime = 0;*/
-int16_t testStartTime, testEndTime = 0;
-//int_16t testEndTime = 0;
-int8_t testRunning, firstIteration = false;
-//int8_t testRunning = false;
-void startTest();
-void stopTest();
-
-char query = 'x';
-
-int16_t throttle = 1000;
-
-void writeEEPROM();
-void readEEPROM();
-void initEEPROM();
-float nvrReadFloat(int address); // defined in DataStorage.h
-void nvrWriteFloat(float value, int address); // defined in DataStorage.h
-long nvrReadLong(int address); // defined in DataStorage.h
-void nvrWriteLong(long value, int address); // defined in DataStorage.h
-
-// AQ BatteryMonitor setup
-#include "BatteryMonitor.h"
-// Usage: #define BattCustomConfig DEFINE_BATTERY(#cells, vpin, vscale, vbias, cpin, cscale, cbias)
-// breadboarded version w/90A AttoPilot using 5V/16MHz Arduino Pro Mini
-#define BattCustomConfig DEFINE_BATTERY(3,A0,78.5,0,A1,136.363636,0) // voltage on a0, current on a1
-// v0.1 first prototype from DorkBot:
-//#define BattCustomConfig DEFINE_BATTERY(3,A0,18.666,0,A1,40.26,0) // voltage on a0, current on a1
-struct BatteryData batteryData = BattCustomConfig;
+// battery monitoring setup setup
+#include "battery.h"
 
 // load cell
-#define AREAD 0
-#define BREAD 1
-#define AWEIGHT 2
-#define BWEIGHT 3
-#define NOCAL 999
-char mode = '0';
-float cal[4];
-int16_t newCalNum = NOCAL;
-#include "LoadCell.h"
+#include "loadCell.h"
 
-// control of motor
-#define MINCOMMAND 1000
-#define MAXCOMMAND 2000
-void primaryTest();
-#include "MotorsPWMTimer.h"
-
+// control of motor via ESC
+#include "motor.h"
 
 // different data collection modes
-#include "Modes.h"
-
-// serial transmission
-//#include "SerialComm.h"
-#include "CLI.h"
-#include "CLImotor.h"
+#include "modes.h"
 
 // EEPROM
-#include "DataStorage.h"
+#include "eeprom.h"
 
-
+// Serial Communication
+#include "CLI.h"
 
 ///////////////////////////////////////////////////////////////
 //////////////////////// Loop Functions ///////////////////////
@@ -175,12 +115,12 @@ void setup()
   initializeMotor();
   initializeLoadCell();
   
-  //Serial.println();
+  //Serial.print("\n");
   Serial.print("MotorAnalyzer v");
   Serial.print(swver);
-  Serial.println(" by wooden");
+  Serial.print(" by wooden\n");
   
-  startTare();
+  startLoadTare();
 }
 
 ///////////////////////////////////////////////////////////////

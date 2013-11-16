@@ -52,21 +52,6 @@ Serial.print("z -                                 | Z - \n");*/
 
 
 
-void motorSetupCLI();
-void sendData();
-void printBatteryData();
-void printTestStart();
-void printTestTime();
-void printLoad();
-void printLoadCal();
-void readValueSerial(char *data, byte size);
-float readFloatSerial();
-long readIntegerSerial();
-void comma();
-
-float newCalWeight;
-
-uint8_t cliBusy, validQuery = false;
 
 
 void processSerial() 
@@ -80,24 +65,24 @@ void processSerial()
       // help
       cliBusy = true;
       
-      Serial.print("Motor Analyzer v0.2 CLI\n");
-      Serial.print("Lower case letters print data, capitals used to change settings\n");
-      Serial.print("1 - Primary test - see \"Primary Test CLI\"\n");
-      Serial.print("2 - Response test - see \"Response Test CLI\"\n");
-      Serial.print("3 - Hover test - see \"Hover Test CLI\"\n");
-      Serial.print("a - print current load cell data             | A - open Load Cell CLI\n");
-      Serial.print("b - print current battery data               | B - open Battery CLI\n");
-      Serial.print("c - calibrate ESC - REMOVE PROPS FIRST!!!    | C - open Motor Setup CLI\n");
-      Serial.print("d -                                          | D - Motor Test CLI\n");
-      /*Serial.print("e -                                          | E - \n");
-      Serial.print("f -                                          | F - \n");
-      Serial.print("g -                                          | G - \n");
-      Serial.print("h -                                          | H - \n");*/
-      Serial.print("i - re-initialize EEPROM (restore defaults)  | I - \n");
-      /*Serial.print("j -                                          | J - \n");
-      Serial.print("k -                                          | K - \n");*/
-      Serial.print("l - print timing loop deltas (ms)            | L - \n");
-      Serial.print("\nPress space bar for more or enter a command....\n");
+      Serial.println("Motor Analyzer v0.2 CLI");
+      Serial.println("Lower case letters print data, capitals used to change settings");
+      Serial.println("1 - Primary test - see \"Primary Test CLI\"");
+      Serial.println("2 - Response test - see \"Response Test CLI\"");
+      Serial.println("3 - Hover test - see \"Hover Test CLI\"");
+      Serial.println("a -                                          | A -");
+      Serial.println("b - print current battery data               | B -");
+      Serial.println("c - print current load cell data             | C -");
+      Serial.println("d -                                          | D - calibrate ESC - REMOVE PROPS FIRST!!!");
+      Serial.println("e -                                          | E -");
+      Serial.println("f - print ESC PWM frequency in Hz            | F - Adjust ESC signal PWM frequency in Hz    | F400");
+      Serial.println("g - print battery voltage/current pins       | G - Adjust battery voltage/current pins      | G0;1;");
+      Serial.println("h - print battery vscale,vbias,cscale,cbias  | H - Adjust battery vscale,vbias,cscale,cbias | H78.5;0;136.36;0;");
+      Serial.println("i -                                          | I - re-initialize EEPROM (restore defaults)");
+      Serial.println("j -                                          | J -");
+      Serial.println("k -                                          | K -");
+      Serial.println("l - print timing loop deltas (ms)            | L -");
+      Serial.println("\nPress space bar for more or enter a command....");
       
       while (!Serial.available());
       query = Serial.read();
@@ -107,21 +92,21 @@ void processSerial()
         return; 
       }
       
-      Serial.print("\n");
-      /*Serial.print("m -                                          | M - \n");
-      Serial.print("n -                                          | N - \n");
-      Serial.print("o -                                          | O - \n");*/
-      Serial.print("p - pulse motor three times                  | P - \n");
-      /*Serial.print("q -                                          | Q - \n");
-      Serial.print("r -                                          | R - \n");
-      Serial.print("s -                                          | S - \n");*/
-      Serial.print("t - print last test start and end times      | T - \n");
-      /*Serial.print("u -                                          | U - \n");
-      Serial.print("v -                                          | V - \n");*/
-      Serial.print("w -                                          | W - Write all values to EEPROM\n");
-      Serial.print("x - stop EVERYTHING                          | X - \n");
-      //Serial.print("y -                                          | Y - \n");
-      Serial.print("z - zero out or tare load cell               | Z - \n");
+      Serial.println();
+      Serial.println("m - show primary test ramp up/down/max times | M - adjust primary ramp times (up/down/max)  | M20;20;5;");
+      Serial.println("n -                                          | N -| ");
+      Serial.println("o -                                          | O -");
+      Serial.println("p -                                          | P - pulse motor n times \"Pn\" where n = int | P12;");
+      Serial.println("q -                                          | Q -");
+      Serial.println("r -                                          | R -");
+      Serial.println("s -                                          | S -");
+      Serial.println("t - print last test start and end times      | T -");
+      Serial.println("u -                                          | U -");
+      Serial.println("v -                                          | V -");
+      Serial.println("w -                                          | W - Write all values to EEPROM");
+      Serial.println("x - stop EVERYTHING                          | X - stop EVERYTHING");
+      Serial.println("y -                                          | Y -");
+      Serial.println("z - zero out or tare load cell               | Z -");
 
       query = 'x';
       cliBusy = false;
@@ -154,9 +139,9 @@ void processSerial()
       break;
       
     case 'a':
-      // print load cell values
+      // print load cell values continuously
       printLoad();
-      //query = 'x';
+      validQuery = false;
       break;
     
     case 'b':
@@ -165,24 +150,21 @@ void processSerial()
       validQuery = false;
       break;
     
-    case 'c':
-      // calibrate ESC
-      mode = CALIBRATE_ESC;
-      validQuery = false;
-      break;
-    
     case 'f':
       // print pwm freq
       Serial.print("PWM freq (Hz): ");
-      Serial.println(pwmFreq);
+      Serial.print(pwmFreq);
+      Serial.println();
       query = 'x';
       validQuery = false;
       break;
       
     case 'g':
-      // print delta time G_dt
-      Serial.print("main loop timing (us): ");
-      Serial.println(mainG_dt); 
+      // print battery voltage/current pins
+      Serial.print("Battery Voltage pin: ");
+      Serial.println(VPin); 
+      Serial.print("Battery Current pin: ");
+      Serial.println(CPin);
       query = 'x';
       validQuery = false;
       break;
@@ -211,9 +193,14 @@ void processSerial()
       validQuery = false;
       break;
       
-    case 'p':
-      // pulse motor
-      pulseMotor(3);
+    case 'm':
+      // display primary test ramp up/down/max times
+      Serial.print("Primary test ramp up, ramp down, and max throttle times: ");
+      Serial.print(primaryUpTime);
+      Serial.print(", ");
+      Serial.print(primaryDownTime);
+      Serial.print(", ");
+      Serial.println(primaryMaxThrottleTime);
       query = 'x';
       validQuery = false;
       break;
@@ -226,7 +213,8 @@ void processSerial()
       
     case 'z':
       // zero out, or TARE, load cell
-      startTare();
+      mode = TARE_LOAD;
+      firstIteration = true;
       query = 'x';
       validQuery = false;
       break;
@@ -242,83 +230,142 @@ void processSerial()
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
     
-    case 'C':
-      // Motor Setup CLI
-      stopMotor();
-      motorSetupCLI();
+    case 'D':
+      // calibrate ESC
+      mode = CALIBRATE_ESC;
       query = 'x';
       validQuery = false;
       break;
       
+    case 'F':
+        // change motor pwm frequency
+        int8_t temppwmFreq;
+        temppwmFreq = readIntegerSerial();
+        Serial.print("Old PWM Freq: "); Serial.print(pwmFreq); Serial.print("\n");
+        changePWMfreq(temppwmFreq);
+        Serial.print(", new PWM Freq: "); Serial.print(pwmFreq); Serial.print("\n");
+        Serial.print("Re-initializing motors at new frequency...\n");
+        query = 'f';
+        validQuery = false;
+        break;
+        
+    case 'G':
+      // adjust Battery pins
+      int8_t tempVPin, tempCPin;
+      tempVPin = readIntegerSerial();
+      tempCPin = readIntegerSerial();
+      if (((0 <= tempVPin) || (tempVPin <= 7)) && ((0 <= tempCPin) || (tempCPin <= 6)) && (tempVPin != tempCPin)) 
+      {
+        VPin = tempVPin;
+        CPin = tempCPin;
+      } else if (tempVPin == tempCPin) {
+        Serial.println("Cannot set C and V pins to the same pin, please try again."); 
+      } else {
+        Serial.println("Available pins are analog pins 0-6. Please try again."); 
+      }    
+      query = 'g';     
+      validQuery = false;
+      break;
+    
+    case 'H':
+      // adjust battery voltage/curent scaling and bias
+      float tempVScale, tempVBias, tempCScale, tempCBias;
+      tempVScale = readFloatSerial();
+      tempVBias  = readFloatSerial();
+      tempCScale = readFloatSerial();
+      tempCBias  = readFloatSerial();
+      VScale = tempVScale;
+      VBias  = tempVBias;
+      CScale = tempCScale;
+      CBias  = tempCBias;
+      query = 'h';     
+      validQuery = false;
+      break;
+  
     case 'L':
       //change load cell calibration
-      mode = '0';
+      mode = IDLE;
       
-      newCalWeight = readFloatSerial();
+      newLoadCalWeight = readFloatSerial();
       
       // catch if we already have this calibration
       // or if we're obviously replacing low or high cal
-      if (newCalWeight <= cal[AWEIGHT]) 
+      if (newLoadCalWeight <= loadCal[AWEIGHT]) 
       {
-        newCalNum = AREAD;
-        Serial.println("Replacing low calibration");
+        newLoadCalNum = AREAD;
+        Serial.print("Replacing low calibration\n");
       } 
-      else if (newCalWeight >= cal[BWEIGHT]) 
+      else if (newLoadCalWeight >= loadCal[BWEIGHT]) 
       {
-        newCalNum = BREAD;
-        Serial.println("Replacing high calibration");
+        newLoadCalNum = BREAD;
+        Serial.print("Replacing high calibration\n");
       }
-      else if ((newCalWeight > cal[AWEIGHT]) && (newCalWeight < cal[BWEIGHT]))
+      else if ((newLoadCalWeight > loadCal[AWEIGHT]) && (newLoadCalWeight < loadCal[BWEIGHT]))
       {
         // new calibration weight is in between previous readings
         // find which it's closer to, replace that one
-        int tempDeltaCal0 = abs(newCalWeight - cal[AWEIGHT]);
-        int tempDeltaCal1 = abs(newCalWeight - cal[BWEIGHT]);
+        int tempDeltaCal0 = abs(newLoadCalWeight - loadCal[AWEIGHT]);
+        int tempDeltaCal1 = abs(newLoadCalWeight - loadCal[BWEIGHT]);
         if (tempDeltaCal0 > tempDeltaCal1) {
-          newCalNum = BREAD;
-          Serial.println("new cal closer to high cal, replacing high cal");
+          newLoadCalNum = BREAD;
+          Serial.print("new cal closer to high cal, replacing high cal\n");
         } 
         else 
         {
-          newCalNum = AREAD;
-          Serial.println("new cal closer to low cal, replacing low cal");
+          newLoadCalNum = AREAD;
+          Serial.print("new cal closer to low cal, replacing low cal\n");
         }
       } /*else { // timed out - user didn't enter a number
-        Serial.println("To calibrate the load cell, two measurements are taken with known weights.");
-        Serial.println("Place a known weight on the scale and use the \"L\" command to initiate the calibration");
-        Serial.println("Command \"L\" usage example: \"L50.3\" - 50.3 means the object weighs 50.3.");
-        Serial.println("Unit of weight does not matter to this program - if you enter in grams, output load will be in grams.");
+        Serial.print("To calibrate the load cell, two measurements are taken with known weights.\n");
+        Serial.print("Place a known weight on the scale and use the \"L\" command to initiate the calibration\n");
+        Serial.print("Command \"L\" usage example: \"L50.3\" - 50.3 means the object weighs 50.3.\n");
+        Serial.print("Unit of weight does not matter to this program - if you enter in grams, output load will be in grams.\n");
         newCalNum = NOCAL;
         break;
       }*/
       
-      cal[newCalNum + 2] = newCalWeight;
+      loadCal[newLoadCalNum + 1] = newLoadCalWeight;
       Serial.print("Weight");
-      Serial.print(newCalNum);
+      Serial.print(newLoadCalNum);
       Serial.print(" = ");
-      Serial.println(newCalWeight);
+      Serial.println(newLoadCalWeight);
       rawLoadRead = true;
       digitalWrite(LEDPIN, LOW);
-      query = '+';
+      query = 'A';
+      validQuery = false;
+      break;
+      
+    case 'M':
+      // adjust primary test ramp up/down/max times
+      int8_t tempPrimaryUpTime, tempPrimaryDownTime, tempPrimaryMaxThrottleTime;
+      tempPrimaryUpTime          = readIntegerSerial();
+      tempPrimaryDownTime        = readIntegerSerial();
+      tempPrimaryMaxThrottleTime = readIntegerSerial();
+      primaryUpTime          = tempPrimaryUpTime;
+      primaryDownTime        = tempPrimaryDownTime;
+      primaryMaxThrottleTime = tempPrimaryMaxThrottleTime;
+      
+      query = 'm';
       validQuery = false;
       break;
       
     case 'P':
-      // change pwm freq
-      /*int temppwmFreq;
-      temppwmFreq = readFloatSerial();
-      Serial.print("Old PWM Freq: ");
-      Serial.print(pwmFreq);
-      changePWMfreq(temppwmFreq);
-      Serial.print(", new PWM Freq: ");
-      Serial.println(pwmFreq);*/
+      // pulse motor n times
+      int8_t numPulses;
+      numPulses = readIntegerSerial();
+      pulseMotor(numPulses);
       query = 'x';
       validQuery = false;
       break;
       
+    /*case 'P':
+      query = 'x';
+      validQuery = false;
+      break;*/
+      
     case 'W':
       // write all values to EEPROM
-      Serial.println("writing values to EEPROM . . .");
+      Serial.println("Writing values to EEPROM . . .");
       writeEEPROM();
       query = 'x';
       break;
@@ -362,8 +409,7 @@ void sendData()
   Serial.print(","); 
   Serial.print((float)(batteryData.usedCapacity - batteryData.testStartUsedCapacity)/1000);  // used curr stored in uAh, displayed in mAh
   Serial.print(",");
-  Serial.print(load);                                  // load in g
-  Serial.println(",");
+  Serial.println(load);                                // load in g
 }
 
 void printBatteryData() 
@@ -380,6 +426,7 @@ void printBatteryData()
   Serial.print((float)batteryData.usedCapacity/1000);
   Serial.print(", Used I during test: ");
   Serial.println((float)(batteryData.usedCapacity - batteryData.testStartUsedCapacity)/1000);
+  //Serial.println();
 }
 
 void printTestStart() 
@@ -412,15 +459,15 @@ void printLoad()
 
 void printLoadCal() {
   Serial.print("aReading = ");
-  Serial.print(cal[AREAD]);
+  Serial.print(loadCal[AREAD]);
   Serial.print(", aWeight = ");
-  Serial.print(cal[AWEIGHT]);
+  Serial.print(loadCal[AWEIGHT]);
   Serial.print(" g, bReading = ");
-  Serial.print(cal[BREAD]);
+  Serial.print(loadCal[BREAD]);
   Serial.print(", bWeight = ");
-  Serial.print(cal[BWEIGHT]);
+  Serial.print(loadCal[BWEIGHT]);
   Serial.print(" g, gain: ");
-  Serial.println(calGain);
+  Serial.println(loadCalGain);
 }
 
 
@@ -435,6 +482,9 @@ void printLoadCal() {
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
+
+void readValueSerial(char *data, byte size);
+void comma();
 
 void readValueSerial(char *data, byte size) {
   byte index = 0;
@@ -472,9 +522,9 @@ long readIntegerSerial() {
   return atol(data);
 }
 
-void comma() {
+/*void comma() {
   Serial.print(',');
-}
+}*/
 
 
 

@@ -3,14 +3,6 @@
  */
 
 
-int16_t pwmFreq;
-float pwmCounterPeriod;
-
-int16_t minArmedThrottle;
-
-// function prototypes
-void writeMotor(int command);
-
 /* processMotor
  * 
  * Controls motor and writes MINCOMMAND unless:
@@ -28,9 +20,10 @@ void processMotor()
  * Send a few quick pulses to signal calibration is done.
  */
 
-void pulseMotor(byte nbPulse) 
+void pulseMotor(byte nPulse) 
 {
-  for (byte i = 0; i < nbPulse; i++) 
+  testRunning = true;
+  for (byte i = 0; i < nPulse; i++) 
   {
     writeMotor(MINCOMMAND + 200);
     delay(250);
@@ -45,9 +38,17 @@ void stopMotor()
   writeMotor(throttle);
 }
 
-//#define PWM_FREQUENCY 400 // in Hz
-#define PWM_PRESCALER 8
-//#define PWM_COUNTER_PERIOD (F_CPU/PWM_PRESCALER/PWM_FREQUENCY)
+void calibrateESC()
+{
+  testRunning = true;
+  Serial.println("SENDING MAXCOMMAND to motors for 3s, make sure props are off!!!!");
+  throttle = MAXCOMMAND;
+  writeMotor(throttle);
+  delay(3000);
+  Serial.println("Now sending MINCOMMAND to motors...");
+  stopMotor();
+}
+
 
 
 
@@ -61,7 +62,7 @@ void initializeMotor()
   // initialize PWM timer 1 - 16 bit
   TCCR1A = ((1<<WGM11)|(1<<COM1A1));            // fast PWM mode, output on a1
   TCCR1B = ((1<<WGM13)|(1<<WGM12)|(1<<CS11));
-  pwmCounterPeriod = F_CPU/PWM_PRESCALER/pwmFreq;
+  
   ICR1 = pwmCounterPeriod;
 }
 
@@ -73,6 +74,7 @@ void writeMotor(int command)
 void changePWMfreq(int newpwmFreq) 
 {
   pwmFreq = newpwmFreq;
+  pwmCounterPeriod = F_CPU/PWM_PRESCALER/pwmFreq;
   initializeMotor();
 }
 

@@ -4,10 +4,17 @@
  * Handles EEPROM value reading/saving
  */
  
-float nvrReadFloat(int address);
-void nvrWriteFloat(float value, int address);
-long nvrReadLong(int address);
-void nvrWriteLong(long value, int address);
+ 
+void writeEEPROM();
+void readEEPROM();
+void initEEPROM();
+float nvrReadFloat(int address); // defined in DataStorage.h
+void nvrWriteFloat(float value, int address); // defined in DataStorage.h
+long nvrReadLong(int address); // defined in DataStorage.h
+void nvrWriteLong(long value, int address); // defined in DataStorage.h
+
+
+
 
 typedef struct 
 { 
@@ -16,19 +23,35 @@ typedef struct
   float A_WEIGHT_ADR;
   float B_READ_ADR;
   float B_WEIGHT_ADR;
+  float V_PIN_ADR;
+  float V_SCALE_ADR;
+  float V_BIAS_ADR;
+  float C_PIN_ADR;
+  float C_SCALE_ADR;
+  float C_BIAS_ADR;
+  float PRI_RAMP_UP_TIME_ADR;
+  float PRI_RAMP_DOWN_TIME_ADR;
+  float PRI_MAX_THROTTLE_TIME_ADR;
   float PWM_FREQ_ADR;
   float MIN_ARMED_THROTTLE_ADR;
-  //float V_SENSE_ADR;
-  //float I_SENSE_ADR;
 } t_NVR_Data;
 
 
 void initEEPROM() 
 {
-  cal[AREAD] = 68;
-  cal[BREAD] = 162;
-  cal[AWEIGHT] = 99.5;
-  cal[BWEIGHT] = 344.9;
+  loadCal[AREAD] = 68;
+  loadCal[AWEIGHT] = 99.5;
+  loadCal[BREAD] = 162;
+  loadCal[BWEIGHT] = 344.9;
+  VPin = 0;
+  VScale = 78.5;
+  VBias = 0;
+  CPin = 1;
+  CScale = 136.363636;
+  CBias = 0;
+  primaryUpTime = 15;
+  primaryDownTime = 15;
+  primaryMaxThrottleTime = 5;
   pwmFreq = 400;
 }
 
@@ -40,10 +63,19 @@ void initEEPROM()
 
 void readEEPROM() 
 { 
-  cal[AREAD] = readFloat(A_READ_ADR);
-  cal[BREAD] = readFloat(B_READ_ADR);
-  cal[AWEIGHT] = readFloat(A_WEIGHT_ADR);
-  cal[BWEIGHT] = readFloat(B_WEIGHT_ADR);
+  loadCal[AREAD]   = readFloat(A_READ_ADR);
+  loadCal[AWEIGHT] = readFloat(A_WEIGHT_ADR);
+  loadCal[BREAD]   = readFloat(B_READ_ADR);
+  loadCal[BWEIGHT] = readFloat(B_WEIGHT_ADR);
+  VPin   = readFloat(V_PIN_ADR);
+  VScale = readFloat(V_SCALE_ADR);
+  VBias  = readFloat(V_BIAS_ADR);
+  CPin   = readFloat(C_PIN_ADR);
+  CScale = readFloat(C_SCALE_ADR);
+  CBias  = readFloat(C_BIAS_ADR);
+  primaryUpTime      = readFloat(PRI_RAMP_UP_TIME_ADR);
+  primaryDownTime    = readFloat(PRI_RAMP_DOWN_TIME_ADR);
+  primaryMaxThrottleTime = readFloat(PRI_MAX_THROTTLE_TIME_ADR);
   pwmFreq = readLong(PWM_FREQ_ADR);
   minArmedThrottle = readLong(MIN_ARMED_THROTTLE_ADR);
 }
@@ -51,10 +83,19 @@ void readEEPROM()
 void writeEEPROM() 
 {
   writeFloat(SOFTWARE_VERSION, SOFTWARE_VERSION_ADR);
-  writeFloat(cal[AREAD], A_READ_ADR);
-  writeFloat(cal[BREAD], B_READ_ADR);
-  writeFloat(cal[AWEIGHT], A_WEIGHT_ADR);
-  writeFloat(cal[BWEIGHT], B_WEIGHT_ADR);
+  writeFloat(loadCal[AREAD],   A_READ_ADR);
+  writeFloat(loadCal[AWEIGHT], A_WEIGHT_ADR);
+  writeFloat(loadCal[BREAD],   B_READ_ADR);
+  writeFloat(loadCal[BWEIGHT], B_WEIGHT_ADR);
+  writeFloat(VPin,   V_PIN_ADR);
+  writeFloat(VScale, V_SCALE_ADR);
+  writeFloat(VBias,  V_BIAS_ADR);
+  writeFloat(CPin,   C_PIN_ADR);
+  writeFloat(CScale, C_SCALE_ADR);
+  writeFloat(CBias,  C_BIAS_ADR);
+  writeFloat(primaryUpTime,        PRI_RAMP_UP_TIME_ADR);
+  writeFloat(primaryDownTime,      PRI_RAMP_DOWN_TIME_ADR);
+  writeFloat(primaryMaxThrottleTime,   PRI_MAX_THROTTLE_TIME_ADR);
   writeLong(pwmFreq, PWM_FREQ_ADR);
   writeLong(minArmedThrottle, MIN_ARMED_THROTTLE_ADR);
 }

@@ -1,4 +1,0 @@
-/*
- * Configurable Battery Monitor
- */
-
