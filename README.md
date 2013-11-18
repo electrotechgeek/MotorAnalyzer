@@ -16,6 +16,7 @@ Current functionality:
 - Serial communication @ 115200 BAUD
 -- Data is sent over serial in real time as test executes
 -- Configurable frequency of the PWM signal sent to ESCs
+- Battery and load sensing controlled via interrupts - sampled at 1KHz and averaged at 100Hz
 
 Planned funcionality:
 - Multiple test types

@@ -28,7 +28,8 @@
  */
  
 #define SOFTWARE_VERSION 0.2
- 
+#define TIMER0_PRESCALAR 64
+#define TIMER0_OVERFLOW  250 
 
 #include <stdlib.h>
 #include <math.h>
@@ -44,17 +45,20 @@
 // load cell
 #include "loadCell.h"
 
+// interrupt service routines - sensing only for now
+#include "interrupts.h"
+
 // control of motor via ESC
 #include "motor.h"
 
-// different data collection modes
+// different data collection and sensor calibrating modes
 #include "modes.h"
 
 // EEPROM
 #include "eeprom.h"
 
 // Serial Communication
-#include "CLI.h"
+#include "cli.h"
 
 ///////////////////////////////////////////////////////////////
 //////////////////////// Loop Functions ///////////////////////
@@ -97,6 +101,7 @@ void process1() {
 }*/
 
 
+
 ///////////////////////////////////////////////////////////////
 ///////////////////////////// SETUP ///////////////////////////
 ///////////////////////////////////////////////////////////////
@@ -110,6 +115,8 @@ void setup()
     initEEPROM();
     writeEEPROM();
   }
+  
+  initializeInterrupts();
   
   initializeBatteryMonitor(batteryMonitorAlarmVoltage);
   initializeMotor();
@@ -133,7 +140,7 @@ void loop() {
   G_dt = (deltaTime) / 1000000.0; 
   mainG_dt = currentTime - previousMainTime;
   
-  measureBattery(mainG_dt*1000.0);
+  //measureBattery(mainG_dt*1000.0);
   
   if (deltaTime >= 10000) 
   {

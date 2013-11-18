@@ -40,7 +40,7 @@ float VScale, VBias, CScale, CBias = 0;
 
 // function prototypes
 void initializeBatteryMonitor(float alarmVoltage);
-void measureBattery(int8_t deltaTime);
+void measureBattery();
 int8_t batteryIsAlarm(), batteryIsWarning();
 
 

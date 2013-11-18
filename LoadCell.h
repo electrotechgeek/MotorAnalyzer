@@ -54,20 +54,21 @@ void calculateLoadGain();
 void averageLoadCell() 
 {
   loadAvg = rawLoad / loadSamples;
-  loadSamples = 0;
-  rawLoad = 0;
   loadNoGain = loadAvg - loadTare;
   load = loadNoGain * loadCalGain;
+  
+  loadSamples = 0;
+  rawLoad = 0;
   newLoadAvgAvail = true;
 }
 
 void readLoadCell() 
 {
-  rawLoad += (long)analogRead(loadPin+14);
+  rawLoad += (int16_t)analogRead(loadPin+14);
   loadSamples++;
   
-  if (frameCounter % TASK_25HZ == 0)
-    averageLoadCell();
+  //if (frameCounter % TASK_25HZ == 0)
+  //  averageLoadCell();
 }
 
 void calculateLoadGain() 

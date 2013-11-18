@@ -8,14 +8,18 @@ struct BatteryData
 {
   byte   cells;         // Number of Cells (used for alarm/warning voltage)
   int16_t voltage;       // Current battery voltage (in 10mV:s)
+  int16_t voltageSum;
   int16_t previousVoltage;
   int16_t minVoltage;    // Minimum voltage since reset
   
   int16_t current;          // Current battery current (in 10mA:s)
+  int16_t currentSum;
   int16_t previousCurrent;
   int16_t maxCurrent;       // Maximum current since reset
   int16_t usedCapacity;     // Capacity used since reset (in uAh)
   int16_t testStartUsedCapacity;
+  
+  int16_t samples;
 } batteryData;
 
 
@@ -76,20 +80,6 @@ void batteryGetCellCount()
   }
 }
 
-// TO DO: Fix oversampling here and in load cell
-
-void initializeBatteryMonitor(float alarmVoltage) {
-  // set ADC prescaler to 64, this ups samples per second to ~16KHz
-  //ADCSRA &= ((1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)); // first clear bits
-  //ADCSRA |= ((1<<ADPS2)|(1<<ADPS1));            // set prescaler to 64, see datasheet pg
-  
-  //setBatteryCellVoltageThreshold(alarmVoltage);
-  pinMode(VPin, INPUT);
-  pinMode(CPin, INPUT);
-  resetBattery();
-  measureBattery(0);
-  batteryGetCellCount();
-}
 
 int8_t batteryIsAlarm() 
 {
@@ -107,33 +97,29 @@ int8_t batteryIsWarning()
   return false;
 }
 
-void measureBattery(int8_t deltaTime) 
+void averageBattery(int8_t deltaTime)
 {
+  
   batteryAlarm = false;
   batteryWarning = false;
+  int16_t tempVoltage, tempCurrent;
   
-  uint8_t tempVoltage = (long)analogRead(CPin) * VScale / (1L << ADC_NUMBER_OF_BITS) + VBias;
-  if ((abs(tempVoltage - batteryData.previousVoltage) < 100) || (deltaTime == 0))  // stored in 10mV, 100*10mV = 1V change, probably a bad read
+  tempVoltage = (batteryData.voltageSum / batteryData.samples) * VScale / (1L << ADC_NUMBER_OF_BITS) + VBias;
+  if (abs(tempVoltage - batteryData.previousVoltage) < 100 || (deltaTime == 0))
     batteryData.voltage = tempVoltage;
+  if (tempVoltage < batteryData.minVoltage)
+    batteryData.minVoltage = tempVoltage;
+    
+  tempCurrent = (batteryData.currentSum / batteryData.samples) * CScale / (1L << ADC_NUMBER_OF_BITS) + CBias;
+  if (abs(tempCurrent - batteryData.previousCurrent) < 100 || (deltaTime == 0))
+    batteryData.current = tempCurrent;
+  if (tempVoltage < batteryData.maxCurrent)
+    batteryData.maxCurrent = tempCurrent;
+    
+  batteryData.usedCapacity += (int16_t)batteryData.current * (int16_t)deltaTime * 91 / 32768;  
   
   batteryData.previousVoltage = tempVoltage;
-  //batteryData.voltage = (long)analogRead(VPin);
-  if (batteryData.voltage < batteryData.minVoltage) 
-    batteryData.minVoltage = batteryData.voltage;
-  
-  
-  int8_t tempCurrent = (long)analogRead(CPin) * CScale * 10 / (1L << ADC_NUMBER_OF_BITS) + CBias * 10;
-  if (abs(tempCurrent - batteryData.previousCurrent) < 100)  // stored in 10mA, 100*10mA = 1A change, probably a bad read
-    batteryData.current = tempCurrent;
-  
   batteryData.previousCurrent = tempCurrent;
-  if (batteryData.current > batteryData.maxCurrent) 
-    batteryData.maxCurrent = batteryData.current;
-  
-  
-  // current in 10mA , time in ms -> usedCapacity in uAh  // i.e. / 360 <=> * ( 91 / 32768 )
-  batteryData.usedCapacity += (int16_t)batteryData.current * (int16_t)deltaTime * 91 / 32768;
-  
   
   if (batteryIsAlarm()) 
   {
@@ -153,6 +139,36 @@ void measureBattery(int8_t deltaTime)
     else if (batteryWarningCount > 0) 
       batteryWarningCount--;
   }
+  
+  batteryData.samples = 0;
 }
+
+
+
+void measureBattery() 
+{
+  batteryData.voltageSum += (int16_t)analogRead(VPin);  
+  batteryData.currentSum += (int16_t)analogRead(CPin);
+  batteryData.samples++;
+}
+
+
+// TO DO: Fix oversampling here and in load cell
+
+void initializeBatteryMonitor(float alarmVoltage) {
+  // set ADC prescaler to 64, this ups samples per second to ~16KHz
+  ADCSRA &= ((1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)); // first clear bits
+  ADCSRA |= ((1<<ADPS2)|(1<<ADPS1));            // set prescaler to 64, see datasheet pg
+                                                  // shifting 1 into ADCSRA - ADPS1 and 2
+  
+  //setBatteryCellVoltageThreshold(alarmVoltage);
+  //pinMode(VPin, INPUT);
+  //pinMode(CPin, INPUT);
+  resetBattery();
+  measureBattery();
+  averageBattery(0);
+  batteryGetCellCount();
+}
+
 
 
